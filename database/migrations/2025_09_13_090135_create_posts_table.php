@@ -16,6 +16,8 @@ return new class extends Migration
             $table->string('title');      // Post title
             $table->text('content');      // Post content
             $table->timestamps();         // created_at & updated_at
+            $table->string('image')->nullable();
+
         });
     }
 

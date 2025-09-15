@@ -6,7 +6,7 @@
 </head>
 <body class="container mt-5">
 
-    <h1 class="mb-4">Add New Post</h1>
+    <h1>Create Post</h1>
 
     @if ($errors->any())
         <div class="alert alert-danger">
@@ -18,17 +18,24 @@
         </div>
     @endif
 
-    <form action="{{ route('posts.store') }}" method="POST">
+    <form action="{{ route('posts.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
         <div class="mb-3">
-            <label>Title</label>
-            <input type="text" name="title" class="form-control" value="{{ old('title') }}">
+            <label class="form-label">Title</label>
+            <input type="text" name="title" class="form-control" required>
         </div>
+
         <div class="mb-3">
-            <label>Content</label>
-            <textarea name="content" class="form-control">{{ old('content') }}</textarea>
+            <label class="form-label">Content</label>
+            <textarea name="content" class="form-control" rows="4" required></textarea>
         </div>
-        <button class="btn btn-success">Save</button>
+
+        <div class="mb-3">
+            <label class="form-label">Image</label>
+            <input type="file" name="image" class="form-control">
+        </div>
+
+        <button type="submit" class="btn btn-success">Save Post</button>
         <a href="{{ route('posts.index') }}" class="btn btn-secondary">Back</a>
     </form>
 

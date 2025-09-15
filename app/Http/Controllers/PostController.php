@@ -4,13 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Models\Post;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
 {
     // Show all posts
-    public function index()
+    public function index(Request $request)
     {
-        $posts = Post::all();
+        $search = $request->input('search');
+
+        $posts = Post::when($search, function($query, $search) {
+                        return $query->where('title', 'like', "%{$search}%")
+                                     ->orWhere('content', 'like', "%{$search}%");
+                    })
+                    ->orderBy('created_at', 'desc')
+                    ->paginate(5);
+
         return view('posts.index', compact('posts'));
     }
 
@@ -26,9 +35,19 @@ class PostController extends Controller
         $request->validate([
             'title' => 'required|max:255',
             'content' => 'required',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048',
         ]);
 
-        Post::create($request->all());
+        $post = new Post($request->only(['title', 'content']));
+
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            $filename = time() . '.' . $request->image->getClientOriginalExtension();
+            $request->image->storeAs('public/images', $filename);
+            $post->image = $filename;
+        }
+
+        $post->save();
 
         return redirect()->route('posts.index')
                          ->with('success', 'Post created successfully.');
@@ -46,9 +65,24 @@ class PostController extends Controller
         $request->validate([
             'title' => 'required|max:255',
             'content' => 'required',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048',
         ]);
 
-        $post->update($request->all());
+        $post->fill($request->only(['title', 'content']));
+
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            // Delete old image if exists
+            if ($post->image && Storage::exists('public/images/' . $post->image)) {
+                Storage::delete('public/images/' . $post->image);
+            }
+
+            $filename = time() . '.' . $request->image->getClientOriginalExtension();
+            $request->image->storeAs('public/images', $filename);
+            $post->image = $filename;
+        }
+
+        $post->save();
 
         return redirect()->route('posts.index')
                          ->with('success', 'Post updated successfully.');
@@ -57,6 +91,11 @@ class PostController extends Controller
     // Delete post
     public function destroy(Post $post)
     {
+        // Delete image if exists
+        if ($post->image && Storage::exists('public/images/' . $post->image)) {
+            Storage::delete('public/images/' . $post->image);
+        }
+
         $post->delete();
 
         return redirect()->route('posts.index')
